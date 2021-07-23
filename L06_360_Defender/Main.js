@@ -2,14 +2,20 @@
 var Endabgabe_360_Defender;
 (function (Endabgabe_360_Defender) {
     var ƒ = FudgeCore;
+    //import nameJson from "../L06_360_Defender/";
     window.addEventListener("load", init);
     let viewport = new ƒ.Viewport();
     let gameRoot = new ƒ.Node("GameRoot");
     let lanesRoot = new ƒ.Node("Lanes_Root");
     let canon = new ƒ.Node("canon");
     let boden = new ƒ.Node("boden");
+    let wand_1 = new ƒ.Node("Wand");
+    let wand_2 = new ƒ.Node("Wand");
+    let wand_3 = new ƒ.Node("Wand");
+    let wand_4 = new ƒ.Node("Wand");
     let waende = new ƒ.Node("waende");
     let kugel_spawner = new ƒ.Node("kugelSpawner");
+    let cmpCamera = new ƒ.ComponentCamera();
     let audioManager = new ƒ.AudioManager();
     let audioListener = new ƒ.ComponentAudioListener();
     let audioShoot = new ƒ.Audio("Audio/shoot.mp3");
@@ -38,9 +44,58 @@ var Endabgabe_360_Defender;
         ƒ.Physics.settings.defaultRestitution = 0.5;
         ƒ.Physics.settings.defaultFriction = 0.8;
         ƒ.Physics.world.setGravity(new ƒ.Vector3(0, 0, -.55));
-        //Boden Material
+        gameRoot.addComponent(new ƒ.ComponentTransform()); //Wurzelknoten
+        //Erstelle Boden
+        createBoden();
+        //Erstelle Wände
+        createWalls();
+        //Erstelle KugelSpawner
+        createKugelSpawner();
+        //Init Mouse Listener
+        canvas.addEventListener("mousemove", hndMouse);
+        canvas.addEventListener("click", canvas.requestPointerLock);
+        //Audio
+        gameRoot.addComponent(audioListener);
+        gameRoot.addComponent(audioComponentShoot);
+        gameRoot.addComponent(audioComponentSchwer);
+        gameRoot.addComponent(audioComponentStart);
+        gameRoot.addComponent(audioComponentNewEnemy);
+        audioManager.listenTo(gameRoot);
+        //Init first Camera Setup
+        //cmpCamera.mtxPivot.translateZ(20.5);
+        //cmpCamera.mtxPivot.rotateX(0);
+        cmpCamera.mtxPivot.translateZ(4.5);
+        cmpCamera.mtxPivot.rotateX(75);
+        cmpCamera.mtxPivot.rotateY(180);
+        console.log(cmpCamera);
+        //Init Canon / Player
+        createCanon();
+        //Appending Children to GameRoot
+        gameRoot.appendChild(boden);
+        gameRoot.appendChild(canon);
+        gameRoot.appendChild(waende);
+        console.log(gameRoot);
+        //Init Update Method
+        ƒ.Physics.settings.debugDraw = true;
+        ƒ.Physics.adjustTransforms(gameRoot);
+        //Init Viewport
+        viewport.initialize("Viewport", gameRoot, cmpCamera, canvas);
+        viewport.draw();
+    }
+    function createBoden() {
         let material_Boden = new ƒ.Material("Boden_Color", ƒ.ShaderUniColor, new ƒ.CoatColored(new ƒ.Color(1, 1, 1, 1)));
         let cmpMaterialBoden = new ƒ.ComponentMaterial(material_Boden);
+        let meshBoden = new ƒ.MeshCube("Boden");
+        let cmpMeshBoden = new ƒ.ComponentMesh(meshBoden);
+        let transformBoden = new ƒ.ComponentTransform();
+        transformBoden.mtxLocal.scale(new ƒ.Vector3(20, 20, 1));
+        boden.addComponent(transformBoden);
+        boden.addComponent(cmpMaterialBoden);
+        boden.addComponent(cmpMeshBoden);
+        boden.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
+        boden.getComponent(ƒ.ComponentRigidbody).addEventListener("ColliderEnteredCollision" /* COLLISION_ENTER */, handleCollision);
+    }
+    function createWalls() {
         //Wand Material
         let material_Wand = new ƒ.Material("Wand_Color", ƒ.ShaderUniColor, new ƒ.CoatColored(new ƒ.Color(0.5, 1, 0, 1)));
         let cmpMaterialWand_1 = new ƒ.ComponentMaterial(material_Wand);
@@ -53,19 +108,6 @@ var Endabgabe_360_Defender;
         let cmpMeshWand_2 = new ƒ.ComponentMesh(meshWand);
         let cmpMeshWand_3 = new ƒ.ComponentMesh(meshWand);
         let cmpMeshWand_4 = new ƒ.ComponentMesh(meshWand);
-        //Init Game Root / Boden
-        let meshBoden = new ƒ.MeshCube("Boden");
-        let cmpMeshBoden = new ƒ.ComponentMesh(meshBoden);
-        //cmpMeshBoden.mtxPivot.scale(new ƒ.Vector3(20, 20, 1));
-        gameRoot.addComponent(new ƒ.ComponentTransform()); //Wurzelknoten
-        //Erstelle Boden
-        let transformBoden = new ƒ.ComponentTransform();
-        transformBoden.mtxLocal.scale(new ƒ.Vector3(20, 20, 1));
-        boden.addComponent(transformBoden);
-        boden.addComponent(cmpMaterialBoden);
-        boden.addComponent(cmpMeshBoden);
-        boden.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
-        boden.getComponent(ƒ.ComponentRigidbody).addEventListener("ColliderEnteredCollision" /* COLLISION_ENTER */, handleCollision);
         //Erstelle Wände
         let transformWand_1 = new ƒ.ComponentTransform();
         transformWand_1.mtxLocal.scale(new ƒ.Vector3(1, 20, 10));
@@ -83,35 +125,28 @@ var Endabgabe_360_Defender;
         transformWand_4.mtxLocal.translateX(-10);
         let transformWaende = new ƒ.ComponentTransform();
         waende.addComponent(transformWaende);
-        let wand_1 = new ƒ.Node("Wand");
         wand_1.addComponent(transformWand_1);
         wand_1.addComponent(cmpMaterialWand_1);
         wand_1.addComponent(cmpMeshWand_1);
         wand_1.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
-        //wand_1.getComponent(ƒ.ComponentRigidbody).addEventListener(ƒ.EVENT_PHYSICS.COLLISION_ENTER, handleCollision);
-        let wand_2 = new ƒ.Node("Wand");
         wand_2.addComponent(transformWand_2);
         wand_2.addComponent(cmpMaterialWand_2);
         wand_2.addComponent(cmpMeshWand_2);
         wand_2.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
-        //wand_2.getComponent(ƒ.ComponentRigidbody).addEventListener(ƒ.EVENT_PHYSICS.COLLISION_ENTER, handleCollision);
-        let wand_3 = new ƒ.Node("Wand");
         wand_3.addComponent(transformWand_3);
         wand_3.addComponent(cmpMaterialWand_3);
         wand_3.addComponent(cmpMeshWand_3);
         wand_3.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
-        //wand_3.getComponent(ƒ.ComponentRigidbody).addEventListener(ƒ.EVENT_PHYSICS.COLLISION_ENTER, handleCollision);
-        let wand_4 = new ƒ.Node("Wand");
         wand_4.addComponent(transformWand_4);
         wand_4.addComponent(cmpMaterialWand_4);
         wand_4.addComponent(cmpMeshWand_4);
         wand_4.addComponent(new ƒ.ComponentRigidbody(1, ƒ.PHYSICS_TYPE.STATIC, ƒ.COLLIDER_TYPE.CUBE, ƒ.PHYSICS_GROUP.DEFAULT));
-        //wand_4.getComponent(ƒ.ComponentRigidbody).addEventListener(ƒ.EVENT_PHYSICS.COLLISION_ENTER, handleCollision);
         waende.addChild(wand_1);
         waende.addChild(wand_2);
         waende.addChild(wand_3);
         waende.addChild(wand_4);
-        //Erstelle KugelSpawner
+    }
+    function createKugelSpawner() {
         let material_KS = new ƒ.Material("KS_Color", ƒ.ShaderUniColor, new ƒ.CoatColored(new ƒ.Color(0, 0, 1, 1)));
         let cmpMaterialKS = new ƒ.ComponentMaterial(material_KS);
         let meshKugelSpawner = new ƒ.MeshCube("KugelSpawner");
@@ -122,48 +157,20 @@ var Endabgabe_360_Defender;
         kugel_spawner.addComponent(transformKugelSpawner);
         kugel_spawner.addComponent(cmpMaterialKS);
         kugel_spawner.addComponent(cmpMeshKS);
-        //Init Mouse Listener
-        canvas.addEventListener("mousemove", hndMouse);
-        canvas.addEventListener("click", canvas.requestPointerLock);
-        //Audio
-        gameRoot.addComponent(audioListener);
-        gameRoot.addComponent(audioComponentShoot);
-        gameRoot.addComponent(audioComponentSchwer);
-        gameRoot.addComponent(audioComponentStart);
-        gameRoot.addComponent(audioComponentNewEnemy);
-        audioManager.listenTo(gameRoot);
-        //Init first Camera Setup
-        let cmpCamera = new ƒ.ComponentCamera();
-        //cmpCamera.mtxPivot.translateZ(20.5);
-        //cmpCamera.mtxPivot.rotateX(0);
-        cmpCamera.mtxPivot.translateZ(4.5);
-        cmpCamera.mtxPivot.rotateX(75);
-        cmpCamera.mtxPivot.rotateY(180);
-        console.log(cmpCamera);
+    }
+    function createCanon() {
         //Init Canon / Player
         let meshCanon = new ƒ.MeshCube("Cube_Player");
         let transformCanon = new ƒ.ComponentTransform(new ƒ.Matrix4x4());
         transformCanon.mtxLocal.translateZ(0);
         let cmpMeshCanon = (new ƒ.ComponentMesh(meshCanon));
-        //cmpMeshGameRoot.mtxPivot.scale(new ƒ.Vector3(1, 1, 1));
         let canon_material = new ƒ.Material("Canon_Color", ƒ.ShaderUniColor, new ƒ.CoatColored(new ƒ.Color(0, 1, 0, 1)));
         let canon_cmpMaterial = new ƒ.ComponentMaterial(canon_material);
         canon.addComponent(canon_cmpMaterial);
         canon.addComponent(cmpMeshCanon);
         canon.addComponent(transformCanon);
-        canon.addComponent(cmpCamera);
         canon.appendChild(kugel_spawner);
-        //Appending Children to GameRoot
-        gameRoot.appendChild(boden);
-        gameRoot.appendChild(canon);
-        gameRoot.appendChild(waende);
-        console.log(gameRoot);
-        //Init Update Method
-        ƒ.Physics.settings.debugDraw = true;
-        ƒ.Physics.adjustTransforms(gameRoot);
-        //Init Viewport
-        viewport.initialize("Viewport", gameRoot, cmpCamera, canvas);
-        viewport.draw();
+        canon.addComponent(cmpCamera);
     }
     function handleButtonNormal() {
         schwierigkeit_schwer = false;
@@ -263,12 +270,16 @@ var Endabgabe_360_Defender;
         _event.cmpRigidbody.getContainer().removeComponent(_event.cmpRigidbody.getContainer().getComponent(ƒ.ComponentTransform));*/
         gameRoot.removeChild(_event.cmpRigidbody.getContainer());
         if (schwierigkeit_schwer) {
-            if (score % 10 == 0 && score > 0)
+            if (score % 12 == 0 && score > 0) {
+                score++;
                 createNewEnemys();
+            }
         }
         else {
-            if (score % 6 == 0 && score > 0)
+            if (score % 8 == 0 && score > 0) {
+                score++;
                 createNewEnemys();
+            }
         }
         document.getElementById("myScore").innerHTML = "Score : " + score;
     }
@@ -280,39 +291,15 @@ var Endabgabe_360_Defender;
             switch (i) {
                 //Setup LanePositions
                 case 0:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(-3, 0, 1), new ƒ.Vector3(1, 1, 1), true, 3));
                     break;
                 case 1:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(3, 0, 1), new ƒ.Vector3(1, 1, 1), false, 3));
                     break;
                 case 2:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(3, 0, 1), new ƒ.Vector3(1, 1, 1), false, 3));
                     break;
                 case 3:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(-3, 0, 1), new ƒ.Vector3(1, 1, 1), true, 3));
                     break;
             }
@@ -321,39 +308,15 @@ var Endabgabe_360_Defender;
             switch (i) {
                 //Setup LanePositions
                 case 0:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(-3, 0, 1), new ƒ.Vector3(1, 1, 1), true, 2));
                     break;
                 case 1:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(3, 0, 1), new ƒ.Vector3(1, 1, 1), false, 2));
                     break;
                 case 2:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(3, 0, 1), new ƒ.Vector3(1, 1, 1), false, 2));
                     break;
                 case 3:
-                    lanes[i].getChildren().forEach(element => {
-                        element.getComponent(ƒ.ComponentRigidbody).activate(false);
-                        element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
-                        element.removeComponent(element.getComponent(ƒ.ComponentRigidbody));
-                    });
-                    lanes[i].removeAllChildren();
                     lanes[i].addChild(new Endabgabe_360_Defender.Gegnergeometrie("enemy", new ƒ.Vector3(-3, 0, 1), new ƒ.Vector3(1, 1, 1), true, 2));
                     break;
             }
@@ -390,7 +353,7 @@ var Endabgabe_360_Defender;
                             element.getComponent(ƒ.ComponentRigidbody).setScaling(ƒ.Vector3.ZERO());
                     });
                     lanes.removeChild(gegnerGeo);
-                    score -= 5;
+                    score -= 2;
                     createNewEnemys();
                     document.getElementById("myScore").innerHTML = "Score : " + score;
                 }

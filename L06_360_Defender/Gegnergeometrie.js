@@ -21,6 +21,8 @@ var Endabgabe_360_Defender;
                 for (let j = 1; j < _count + 1; j++) {
                     rand_1 = Gegnergeometrie.createRandomNumber(j);
                     rand_2 = Gegnergeometrie.createRandomNumber(j);
+                    if (rand_2 > 3)
+                        rand_2 = 3;
                     if (positions.has(rand_1 + "|" + rand_2)) {
                         j--;
                     }

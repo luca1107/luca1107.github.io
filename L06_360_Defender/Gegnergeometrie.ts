@@ -29,6 +29,8 @@ namespace Endabgabe_360_Defender {
 
           rand_1  = Gegnergeometrie.createRandomNumber(j);
           rand_2  = Gegnergeometrie.createRandomNumber(j);
+          if(rand_2>3)
+          rand_2=3;
 
 
           if (positions.has(rand_1 + "|" + rand_2)) {

@@ -9,7 +9,7 @@ namespace Endabgabe_360_Defender {
     MAGENTA = "Magenta",
     CYAN = "Cyan"
 }
-  type Materials = Map<CUBE_TYPE, ƒ.Material>;
+  type Materials = Map<CUBE_TYPE, ƒ.Material>
 
   export class Einzelgeometrie extends ƒ.Node {
     static _root:ƒ.Node;

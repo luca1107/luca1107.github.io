@@ -8,7 +8,7 @@ var Endabgabe_360_Defender;
             this.rigidbody = new ƒ.ComponentRigidbody(2, ƒ.PHYSICS_TYPE.DYNAMIC, ƒ.COLLIDER_TYPE.SPHERE, ƒ.PHYSICS_GROUP.DEFAULT);
             let forward = new ƒ.Vector3();
             console.log(_rot.x);
-            this.velocity = new ƒ.Vector3(_pos.x * 2.5, _pos.y * 2.5, .7);
+            this.velocity = new ƒ.Vector3(_pos.x * 2.5, _pos.y * 2.5, 1);
             this.addComponent(new ƒ.ComponentTransform());
             this.mtxLocal.translate(_pos);
             this.mtxLocal.scale(_scale);

@@ -17,7 +17,7 @@ namespace Endabgabe_360_Defender {
 
       console.log(_rot.x);
 
-      this.velocity = new ƒ.Vector3(_pos.x * 2.5 , _pos.y * 2.5 , .7);
+      this.velocity = new ƒ.Vector3(_pos.x * 2.5 , _pos.y * 2.5 , 1);
 
       this.addComponent(new ƒ.ComponentTransform());
       this.mtxLocal.translate(_pos);
